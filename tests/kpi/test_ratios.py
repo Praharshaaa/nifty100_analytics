@@ -1,10 +1,13 @@
-import pytest
 from src.analytics.ratios import (
     net_profit_margin,
     operating_profit_margin,
     return_on_equity,
     return_on_capital_employed,
     return_on_assets,
+    debt_to_equity,
+    interest_coverage_ratio,
+    net_debt,
+    asset_turnover,
 )
 
 # ── Net Profit Margin ──────────────────────────────
@@ -76,3 +79,58 @@ def test_roa_zero_assets():
 
 def test_roa_negative_profit():
     assert return_on_assets(-50, 1000) == -5.0
+# ── Debt to Equity ──────────────────────────────────
+
+def test_de_normal():
+    assert round(debt_to_equity(500, 400, 100), 2) == 1.0
+
+def test_de_debtfree():
+    assert debt_to_equity(0, 400, 100) == 0.0
+
+def test_de_zero_equity():
+    assert debt_to_equity(500, 0, 0) is None
+
+def test_de_high_leverage_flag(caplog):
+    with caplog.at_level("WARNING"):
+        result = debt_to_equity(3000, 400, 100, is_financial_sector=False)
+    assert result > 5
+    assert "High D/E flag" in caplog.text
+
+def test_de_financial_sector_no_flag(caplog):
+    with caplog.at_level("WARNING"):
+        result = debt_to_equity(3000, 400, 100, is_financial_sector=True)
+    assert result > 5
+    assert "High D/E flag" not in caplog.text
+
+
+# ── Interest Coverage Ratio ─────────────────────────
+
+def test_icr_normal():
+    assert round(interest_coverage_ratio(500, 100, 150), 2) == 4.0
+
+def test_icr_debtfree():
+    assert interest_coverage_ratio(500, 100, 0) is None
+
+def test_icr_low_warning(caplog):
+    with caplog.at_level("WARNING"):
+        result = interest_coverage_ratio(100, 0, 100)
+    assert result == 1.0
+    assert "ICR warning" in caplog.text
+
+
+# ── Net Debt ────────────────────────────────────────
+
+def test_net_debt_positive():
+    assert net_debt(1000, 200) == 800
+
+def test_net_debt_negative():
+    assert net_debt(100, 500) == -400
+
+
+# ── Asset Turnover ──────────────────────────────────
+
+def test_asset_turnover_normal():
+    assert asset_turnover(1000, 500) == 2.0
+
+def test_asset_turnover_zero_assets():
+    assert asset_turnover(1000, 0) is None    

@@ -52,3 +52,44 @@ def return_on_assets(net_profit: float, total_assets: float) -> Optional[float]:
     if total_assets == 0 or total_assets is None:
         return None
     return (net_profit / total_assets) * 100
+def debt_to_equity(borrowings: float, equity_capital: float,
+                   reserves: float, is_financial_sector: bool = False) -> Optional[float]:
+    """D/E = borrowings / (equity_capital + reserves).
+    Returns 0 if borrowings = 0 (debt-free).
+    Adds high_leverage_flag if D/E > 5 and NOT financial sector."""
+    total_equity = (equity_capital or 0) + (reserves or 0)
+    if total_equity <= 0:
+        return None
+    if (borrowings or 0) == 0:
+        return 0.0
+    de = borrowings / total_equity
+    if de > 5 and not is_financial_sector:
+        logger.warning(f"High D/E flag: {de:.2f} for non-financial company")
+    return de
+
+
+def interest_coverage_ratio(operating_profit: float, other_income: float,
+                              interest: float) -> Optional[float]:
+    """ICR = (operating_profit + other_income) / interest.
+    Returns None if interest = 0 (debt-free company).
+    Logs warning if ICR < 1.5."""
+    if (interest or 0) == 0:
+        logger.info("ICR: interest = 0 — company is Debt Free")
+        return None
+    icr = (operating_profit + (other_income or 0)) / interest
+    if icr < 1.5:
+        logger.warning(f"ICR warning: {icr:.2f} < 1.5 — risk of not covering interest payments")
+    return icr
+
+
+def net_debt(borrowings: float, investments: float) -> float:
+    """Net Debt = borrowings - investments (investments used as liquid asset proxy).
+    Negative value = net cash positive company."""
+    return (borrowings or 0) - (investments or 0)
+
+
+def asset_turnover(sales: float, total_assets: float) -> Optional[float]:
+    """Asset Turnover = sales / total_assets. None if total_assets = 0."""
+    if (total_assets or 0) == 0:
+        return None
+    return sales / total_assets
